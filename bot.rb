@@ -1,8 +1,10 @@
-
-
 require 'discordrb'
+require 'json'
 
-bot = Discordrb::Bot.new token: 'ODIxNjY4MDIyMTc5NDYzMTg5.YFHD-g.vpSpk-SbQDOIBatXh0u4xXfdK7s'
+file = File.read('credentials.json')
+data_hash = JSON.parse(file)
+
+bot = Discordrb::Bot.new token: data_hash["token"]
 
 bot.message(with_text: 'Ping!') do |event|
   event.respond 'Pong!'
