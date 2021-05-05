@@ -39,7 +39,7 @@ class Server
             # TODO: fix video posts. Unknown which format they are sent in currently
 
             # And away goes the message
-            $bot.send_message(channel_id, "", false, embed)
+            Bot.instance.send_embed(channel_id, embed)
         end
     end
 end
