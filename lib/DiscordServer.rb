@@ -1,17 +1,19 @@
-class Server
-    attr_accessor :subreddits, :id
+class DiscordServer
+    attr_accessor :subreddits, :id, :settings, :posts
 
     # Contains information about which subreddits each channel in the server follows
     def initialize(id, settings)
         @id = id
         @subreddits = {}
+        @settings = {}
         settings["subreddits"].each do |name, subreddit_settings|
             @subreddits[name] = subreddit_settings
         end
+        @posts = {}
     end
 
 
-    def send_message(subreddit, title, content="", url="")
+    def send_message(subreddit, title, bot, content:"", url:"")
         # Avoid async issues. Should probably use locks to be safe (unfollowing a channel = deleting a key, could lead to exception)
         if not @subreddits.key?(subreddit)
             return
@@ -39,7 +41,7 @@ class Server
             # TODO: fix video posts. Unknown which format they are sent in currently
 
             # And away goes the message
-            Bot.instance.send_embed(channel_id, embed)
+            bot.send_embed(channel_id, embed)
         end
     end
 end

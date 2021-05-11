@@ -1,15 +1,17 @@
-require 'singleton'
+require_relative "ContentReceiver"
+require_relative "DiscordServer"
 
-class Bot
-    include Singleton
-
+class DiscordBot
+    include ContentReceiver
     attr_accessor :bot, :servers, :subreddit_listeners
 
-    def initialize
+    def initialize()
         token = read_token()
         @bot = Discordrb::Commands::CommandBot.new token: token, prefix: '!'
         initialize_server_data()
         register_commands()
+
+        @bot.run(true)
     end
 
     # Save the current state of the bot (all discord server, which subreddits they follow and the corresponding channels)
@@ -33,7 +35,7 @@ class Bot
         # It is also easy to find which channels "listen" to a particular subreddit (want to recieve its posts)
         # I've also left room for other metadata, as each server_id key can also contain more info, as well as the individual subreddit keys
         # Could be info such as how many posts they want per day
-        # Exampel data:
+        # Example data:
         #
         #{
         #   "server_id": 
@@ -61,7 +63,7 @@ class Bot
 
             # Just going through the document as can be seen above
             bot_info.each do |id, settings|
-                @servers[id] = Server.new(id, settings)
+                @servers[id] = DiscordServer.new(id, settings)
                 
                 # subreddit_name: [id1, id2, ...]
                 # Described more in-depth above
@@ -74,10 +76,6 @@ class Bot
                 end
             end
         end
-    end
-
-    def run()
-        @bot.run(true)
     end
 
     def register_commands()
@@ -184,11 +182,12 @@ class Bot
 
     # Read in the bot credentials. These are not stored in github for obvious reasons
     def read_token()
-        if not File.exists?('data/credentials.json')
-            puts("No credentials file found. Will now abort.")
+        path = 'data/discord_credentials.json'
+        if not File.exists?(path)
+            puts("No discord credentials file found. Will now abort.")
             exit()
         end
-        credentials = File.read('data/credentials.json')
+        credentials = File.read(path)
         return JSON.parse(credentials)["token"]
     end
 
