@@ -28,5 +28,11 @@ require_relative 'lib/DiscordServer.rb'
 bot = DiscordBot.new()
 content_provider = RedditWatcher.new(bot)
 
-testServer = DiscordServer.new(821667830079946792, {"subreddits"=> {"okbuddyretard"=> {"interval"=> "day", "channel_ids" => [821667830079946796]}}})
-content_provider.check_for_posts({"okbuddyretard"=> [testServer]})
+#testServer = DiscordServer.new(821667830079946792, {"subreddits"=> {"okbuddyretard"=> {"interval"=> "day", "channel_ids" => [821667830079946796]}}})
+#content_provider.check_for_posts({"okbuddyretard"=> [testServer]})
+
+while true
+    sleep(2)
+    content_provider.check_for_posts(bot.servers)
+
+end

@@ -2,13 +2,6 @@ require 'httparty'
 require_relative "ContentProvider"
 require_relative "RedditPostHandler"
 
-# access_token = response["access_token"]
-
-# headers = {"Authorization": "bearer #{access_token}", "User-Agent" => "Testfish client v 0.1 by smörgåsbord"}
-
-# response = HTTParty.get('https://oauth.reddit.com/api/v1/me', headers: headers)
-# pp response
-
 class RedditWatcher
     include ContentProvider
 
@@ -21,6 +14,7 @@ class RedditWatcher
 
     def check_for_posts(options, post_getter=RedditPostHandler)
         post_getter.check_and_send_posts(options, @receiver)
+        @receiver.save_state()
     end
 
     def self.get_generic_header()
@@ -28,7 +22,7 @@ class RedditWatcher
     end
 
     def self.get_user_agent()
-        return "Windows; Reddit scraper 0.1 by u/PreciousFish69"
+        return "Windows; Reddit scraper 0.2 by u/PreciousFish69"
     end
 
     def get_access_token()
