@@ -39,6 +39,22 @@ class DiscordBot
         end
     end
 
+    def unfollow(server_id, subreddit)
+        result = @server_manager.remove_subreddit(server_id, subreddit, @servers)
+
+        if result.is_a? String
+            return result
+        else
+            @servers = result
+        end
+
+        # We always save after each operation that modifies the bot state. Probably not very good performance-wise, but shouldn't be an issue if used small-scale
+        save_state()
+
+        # User feedback
+        return "No longer following: #{subreddit}"
+    end
+
     def register_commands()
         # A command for finding the latency to the bot
         @bot.command :ping do |event|
@@ -49,8 +65,14 @@ class DiscordBot
         @bot.command :follow do |event, subreddit|
 
             server_id = event.server.id.to_s
-            @servers = @server_manager.add_subreddit(server_id, event.channel.id, subreddit, @servers)
+            result = @server_manager.add_subreddit(server_id, event.channel.id, subreddit, @servers)
 
+            if result.is_a? String
+                return result
+            else
+                @servers = result
+            end
+            
             # We always save after each operation that modifies the bot state. Probably not very good performance-wise, but shouldn't be an issue if used small-scale
             save_state()
 
@@ -61,20 +83,7 @@ class DiscordBot
         # A bot command stating that no you longer want to follow a subreddit
         @bot.command :unfollow do |event, subreddit|
             server_id = event.server.id.to_s
-
-            result = @server_manager.remove_subreddit(server_id, subreddit, @servers)
-
-            if result.is_a? String
-                return result
-            else
-                @servers = result
-            end
-
-            # We always save after each operation that modifies the bot state. Probably not very good performance-wise, but shouldn't be an issue if used small-scale
-            save_state()
-
-            # User feedback
-            return "No longer following: #{subreddit}"
+            return DiscordBot.unfollow(server_id, subreddit)
         end
 
         # Give some bare-bones information about which subreddits the server follows. TODO: display the names of the channels following particular subreddits.
@@ -89,13 +98,24 @@ class DiscordBot
 
         # A peaceful exit, make sure to save our state
         @bot.command :exit do |event, subreddit|
-            save_state()
-            exit()
+
+            user_id = event.author.id
+            if user_id == 217704901889884160
+                save_state()
+                exit()
+            else
+                return "You lack sufficient permissions to use this command"
+            end
         end
 
         # Testing command, this is how we would send out a post from a particular subreddit
         @bot.command :showhash do |event, subreddit|
-            return @server_manager.get_server_hash(@servers).to_json()
+            user_id = event.author.id
+            if user_id == 217704901889884160
+                return @server_manager.get_server_hash(@servers).to_json()
+            else
+                return "You lack sufficient permissions to use this command"
+            end
         end
 
         @bot.command :setting do |event, subreddit, setting_name, value|

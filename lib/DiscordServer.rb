@@ -99,6 +99,9 @@ class DiscordServer
     def self.add_subreddit(server_id, channel_id, subreddit, servers)
         # TODO: verify existence of subreddit
         if servers.key?(server_id)
+            if servers[server_id].subreddits.key?(subreddit)
+                return "You are already following this subreddit"
+            end
             servers[server_id].subreddits[subreddit] = {"channel_ids" => [channel_id], "last_post" => 10, "settings" => {"interval" => "day", "count" => 3}}
         else
             # Construct the tree demonstrated above

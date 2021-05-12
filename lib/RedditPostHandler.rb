@@ -40,27 +40,35 @@ class RedditPostHandler
                 
                 bucket.request_sent()
 
-                response["data"]["children"].each do |child|
-                    data = child["data"]
+                if response.code == 200
+                    response["data"]["children"].each do |child|
+                        data = child["data"]
 
-                    title = data["title"]
+                        title = data["title"]
 
-                    if not data.key?("post_hint")
-                        text_content = data["selftext"]
-                        # Too long for discord
-                        if text_content.length > 2000
-                            next
+                        if not data.key?("post_hint")
+                            text_content = data["selftext"]
+                            # Too long for discord
+                            if text_content.length > 2000
+                                next
+                            end
+                            
+                            server.send_message(subreddit_name, title, receiver, content: text_content)
+                        elsif data["post_hint"].include? "video"
+                            video_url = data["url_overridden_by_dest"]
+                            server.send_video(subreddit_name, receiver, title, video_url)
+                        elsif data["post_hint"].include? "image"
+                            image_url = data["url"]
+                            server.send_message(subreddit_name, title, receiver, image_url: image_url)
                         end
-                        
-                        server.send_message(subreddit_name, title, receiver, content: text_content)
-                    elsif data["post_hint"].include? "video"
-                        video_url = data["url_overridden_by_dest"]
-                        server.send_video(subreddit_name, receiver, title, video_url)
-                    elsif data["post_hint"].include? "image"
-                        image_url = data["url"]
-                        server.send_message(subreddit_name, title, receiver, image_url: image_url)
                     end
+                elsif response.code == 404
+                    server.send_message(subreddit_name, "", receiver, content: "Subreddit #{subreddit_name} does not exist and is no longer being followed")
+                    receiver.unfollow(server_id, subreddit_name)
+                else
+                    server.send_message(subreddit_name, "", receiver, content: "Error #{response.code}. :(")
                 end
+
             end
         end
     end
