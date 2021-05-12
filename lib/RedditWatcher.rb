@@ -1,19 +1,20 @@
 require 'httparty'
 require_relative "ContentProvider"
 require_relative "RedditPostHandler"
+require_relative "TokenBucket"
 
 class RedditWatcher
     include ContentProvider
 
-    def initialize(receiver)
+    def initialize(receiver, bucket=TokenBucket)
         @receiver = receiver
+        @bucket = bucket.new(60, 60)
 
-        @token = get_access_token()
-        puts(@token)
+        refresh_token()
     end
 
     def check_for_posts(options, post_getter=RedditPostHandler)
-        post_getter.check_and_send_posts(options, @receiver)
+        post_getter.check_and_send_posts(self, options, @receiver, @bucket)
         @receiver.save_state()
     end
 
@@ -23,6 +24,10 @@ class RedditWatcher
 
     def self.get_user_agent()
         return "Windows; Reddit scraper 0.2 by u/PreciousFish69"
+    end
+
+    def refresh_token()
+        @token = get_access_token()
     end
 
     def get_access_token()

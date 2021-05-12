@@ -36,7 +36,6 @@ class DiscordBot
             file = File.read(@data_path)
             server_hash = JSON.parse(file)
             @servers = @server_manager.parse_saved_servers(server_hash)
-            puts(server_hash)
         end
     end
 
@@ -99,10 +98,33 @@ class DiscordBot
             return @server_manager.get_server_hash(@servers).to_json()
         end
 
+        @bot.command :setting do |event, subreddit, setting_name, value|
+
+            
+            if subreddit == nil or setting_name == nil or value == nil
+                return "Incorrect format"
+            end
+            result = @server_manager.change_setting(subreddit, setting_name, value, event, @servers)
+
+            if result.is_a? String
+                return result
+            else
+                @servers = result
+            end
+
+            save_state()
+
+            return "#{setting_name} for #{subreddit} is now #{value}"
+        end
+
     end
 
     def send_embed(channel_id, embed)
         @bot.send_message(channel_id, "", false, embed)
+    end
+
+    def send_message(channel_id, content)
+        @bot.send_message(channel_id, content, false)
     end
 
     # Read in the bot credentials. These are not stored in github for obvious reasons

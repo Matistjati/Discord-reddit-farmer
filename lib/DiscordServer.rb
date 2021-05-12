@@ -40,6 +40,39 @@ class DiscordServer
         return embed
     end
 
+    def self.change_setting(subreddit, setting_name, value, event, servers)
+        server_id = event.server.id.to_s
+        if not servers.key?(server_id)
+            return "You are following any subreddits on this server yet"
+        end
+
+
+        server = servers[server_id]
+
+        if not server.subreddits.key?(subreddit)
+            return "You are not following the subreddit #{subreddit}"
+        end
+
+        if setting_name == "count"
+            int_value = value.to_i
+            if int_value == 0
+                return "Count has to be a whole number or non-zero"
+            end
+            server.subreddits[subreddit]["settings"]["count"] = int_value
+        elsif setting_name == "interval"
+            if not ["hour", "day", "week", "month", "year", "all"].include?(value)
+                return "The value for interval must be hour, day, week, month, year or all"
+            end
+            server.subreddits[subreddit]["settings"]["interval"] = value
+        elsif setting_name == "last_post"
+            server.subreddits[subreddit]["last_post"] = value.to_i
+        else
+            return "Setting not found"
+        end
+
+        return servers
+    end
+
     def self.parse_saved_servers(server_hash)
         # Sample structure
         # last_post is a timestamp
@@ -66,7 +99,7 @@ class DiscordServer
     def self.add_subreddit(server_id, channel_id, subreddit, servers)
         # TODO: verify existence of subreddit
         if servers.key?(server_id)
-            servers[server_id].subreddits[subreddit] = {"channel_ids" => [channel_id]}
+            servers[server_id].subreddits[subreddit] = {"channel_ids" => [channel_id], "last_post" => 10, "settings" => {"interval" => "day", "count" => 3}}
         else
             # Construct the tree demonstrated above
             settings = {"subreddits" => {subreddit => {"channel_ids" => [channel_id], "last_post" => 0, "settings" => {"interval" => "day", "count" => 3}}}}
@@ -93,7 +126,7 @@ class DiscordServer
         return servers
     end
 
-    def send_message(subreddit, title, bot, content:"", url:"")
+    def send_message(subreddit, title, bot, content: nil, image_url: nil)
         # Avoid async issues. Should probably use locks to be safe (unfollowing a channel = deleting a key, could lead to exception)
         if not @subreddits.key?(subreddit)
             return
@@ -108,20 +141,32 @@ class DiscordServer
             # Title of the post
             embed.title = title
 
-            # For text posts. TODO: option not to recieve text posts
-            if content.length != 0
+            if content != nil
                 embed.description = content
             end
 
             # For image posts
-            if url.length != 0
-                embed.image = Discordrb::Webhooks::EmbedImage.new(url: url)
+            if image_url != nil and image_url.length != 0
+                embed.image = Discordrb::Webhooks::EmbedImage.new(url: image_url)
             end
 
-            # TODO: fix video posts. Unknown which format they are sent in currently
 
             # And away goes the message
             bot.send_embed(channel_id, embed)
+        end
+    end
+
+    def send_video(subreddit, bot, title, video_url)
+        # Avoid async issues. Should probably use locks to be safe (unfollowing a channel = deleting a key, could lead to exception)
+        if not @subreddits.key?(subreddit)
+            return
+        end
+
+        # Given a post from a particular subreddit, send out the post to all relevant channels
+        @subreddits[subreddit]["channel_ids"].each do |channel_id|
+            # And away goes the message
+            bot.send_message(channel_id, title)
+            bot.send_message(channel_id, video_url)
         end
     end
 end
