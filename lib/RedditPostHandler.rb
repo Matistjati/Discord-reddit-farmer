@@ -56,7 +56,7 @@ class RedditPostHandler
                             if text_content == nil
                                 puts("Could not find content for text post. Json saved in last_error.txt")
                                 temp = open("last_error.txt", "w")
-                                temp.write(data)
+                                temp.write(data.to_json())
                                 temp.close()
                                 return
                             end

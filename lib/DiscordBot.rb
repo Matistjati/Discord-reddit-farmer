@@ -90,10 +90,11 @@ class DiscordBot
         # Done by iterating all channels of server and matching their ids with our stored channel ids
         @bot.command :info do |event, subreddit|
             server_id = event.server.id.to_s
-            embed = @server_manager.get_info(event, subreddit, @servers)
+            embeds = @server_manager.get_info(event, subreddit, @servers)
 
-
-            @bot.send_message(event.channel.id, "", false, embed)
+            embeds.each do |embed|
+                @bot.send_message(event.channel.id, "", false, embed)
+            end
         end
 
         # A peaceful exit, make sure to save our state

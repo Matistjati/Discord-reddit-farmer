@@ -35,11 +35,10 @@ class DiscordServer
       end
 
     def self.get_info(event, subreddit, servers)
-        embed = Discordrb::Webhooks::Embed.new()
-
-        embed.title = "Info for #{event.server.name}"
+        embeds = []
+        
         server_id = event.server.id.to_s
-
+        
         if servers.key?(server_id) and servers[server_id].subreddits.length > 0
             info = "This server is following these subreddits:\n"
             servers[server_id].subreddits.each do |subreddit, settings|
@@ -50,19 +49,39 @@ class DiscordServer
                 end
 
                 if settings.key?("settings")
-                    info_string += " Interval: " + settings["settings"]["interval"]
+                    info_string += " .Interval: " + settings["settings"]["interval"]
                 end
 
                 info += info_string + "\n"
             end
-            # info_parts = info.scan("/.{1, 1999}/m")
-            info_parts = info[0, 1999]
-            embed.description = info
+
+            if info.length > 2000
+                info_parts = info.chars.each_slice(1998).map(&:join)
+            else
+                info_parts = [info]
+            end
+            #info_parts = info[0, 1999]
+
+            puts(info_parts.length)
+            puts(info.length)
+            info_parts.each do |info_part|
+                embed = Discordrb::Webhooks::Embed.new()
+                embed.description = info_part
+                embeds.append(embed)
+            end
+            if embeds.length > 0
+                embeds[0].title = "Info for #{event.server.name}"
+            end
         else
-            embed.description = "This server is currently not using the reddit farmer bot. Type !help to get started."
+            embed = Discordrb::Webhooks::Embed.new()
+
+            embed.title = "Info for #{event.server.name}"
+            embed.description = "This server is currently not using the reddit farmer bot. Type $help to get started."
+            embeds.append(embed)
         end
 
-        return embed
+        puts(embeds)
+        return embeds
     end
 
     def self.change_setting(subreddit, setting_name, value, event, servers)
