@@ -41,6 +41,11 @@ class RedditPostHandler
                 bucket.request_sent()
 
                 if response.code == 200
+                    temp = open("ligma.txt", "w")
+                    temp.write(response)
+                    temp.close()
+
+                    server.send_message(subreddit_name, "The bot Will now display #{response["data"]["children"].length} images (debug)", receiver)
                     response["data"]["children"].each do |child|
                         data = child["data"]
 
@@ -48,6 +53,13 @@ class RedditPostHandler
 
                         if not data.key?("post_hint")
                             text_content = data["selftext"]
+                            if text_content == nil
+                                puts("Could not find content for text post. Json saved in last_error.txt")
+                                temp = open("last_error.txt", "w")
+                                temp.write(data)
+                                temp.close()
+                                return
+                            end
                             # Too long for discord
                             if text_content.length > 2000
                                 next
@@ -55,11 +67,36 @@ class RedditPostHandler
                             
                             server.send_message(subreddit_name, title, receiver, content: text_content)
                         elsif data["post_hint"].include? "video"
+                            puts("Video_debug.txt saved")
+                            temp = open("video_debug.txt", "w")
+                            temp.write(data.to_json())
+                            temp.close()
+
                             video_url = data["url_overridden_by_dest"]
+                            if video_url == nil or not video_url.include?("mp4")
+                                if data.key?("secure_media") and data["secure_media"].length > 0 and data["secure_media"].key?("reddit_video")
+                                    video_url = data["secure_media"]["reddit_video"]["fallback_url"]
+                                elsif data.key?("media") and data["media"].length > 0 and data["media"].key?("reddit_video")
+                                    video_url = data["media"]["reddit_video"]["fallback_url"]
+                                else
+                                    video_url = data["url_overridden_by_dest"]
+                                end
+                            end
+
+                            if video_url == nil
+                                next
+                            end
+
                             server.send_video(subreddit_name, receiver, title, video_url)
                         elsif data["post_hint"].include? "image"
                             image_url = data["url"]
                             server.send_message(subreddit_name, title, receiver, image_url: image_url)
+                        else
+                            puts("Could not find type for post. Json saved in last_error.txt")
+                            temp = open("last_error.txt", "w")
+                            temp.write(data.to_json())
+                            temp.close()
+                            server.send_message(subreddit_name, "Everything has failed.", receiver)
                         end
                     end
                 elsif response.code == 404

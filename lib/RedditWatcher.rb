@@ -37,7 +37,7 @@ class RedditWatcher
         # This could be further improved with some level of encryption, although I know far too little about that area to make something secure
         path = 'data/reddit_credentials.json'
         if not File.exists?(path)
-            puts("No credentials file found. Will now abort.")
+            puts("Reddit credentials file \"data/reddit_credentials.json\" found. Will now abort.")
             exit()
         end
         credentials = File.read(path)

@@ -21,6 +21,19 @@ class DiscordServer
         return server_hash
     end
 
+    def self.seconds_to_time(sec)
+        hours = sec / 3600
+        minutes = sec / 60 % 60
+        out = ""
+        if hours > 0
+          out += hours.to_s + " hour (s)"
+        end
+        if minutes > 0
+          out += " " + minutes.to_s + " minutes"
+        end
+        return out
+      end
+
     def self.get_info(event, subreddit, servers)
         embed = Discordrb::Webhooks::Embed.new()
 
@@ -29,9 +42,21 @@ class DiscordServer
 
         if servers.key?(server_id) and servers[server_id].subreddits.length > 0
             info = "This server is following these subreddits:\n"
-            servers[server_id].subreddits.each do |subreddit, channel_ids|
-                info += subreddit + "\n"
+            servers[server_id].subreddits.each do |subreddit, settings|
+                info_string = ""
+                info_string += "**" + subreddit + "**"
+                if settings.key?("last_post")
+                    info_string += ". Time left: " + DiscordServer.seconds_to_time(Time.now.to_i - settings["last_post"])
+                end
+
+                if settings.key?("settings")
+                    info_string += " Interval: " + settings["settings"]["interval"]
+                end
+
+                info += info_string + "\n"
             end
+            # info_parts = info.scan("/.{1, 1999}/m")
+            info_parts = info[0, 1999]
             embed.description = info
         else
             embed.description = "This server is currently not using the reddit farmer bot. Type !help to get started."

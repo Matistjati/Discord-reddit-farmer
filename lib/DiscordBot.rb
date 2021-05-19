@@ -9,7 +9,7 @@ class DiscordBot
         @server_manager = server_manager
         @data_path = "data/discord_data.json"
         token = read_token()
-        @bot = Discordrb::Commands::CommandBot.new token: token, prefix: '!'
+        @bot = Discordrb::Commands::CommandBot.new token: token, prefix: '$'
         initialize_server_data()
         register_commands()
 
@@ -83,7 +83,7 @@ class DiscordBot
         # A bot command stating that no you longer want to follow a subreddit
         @bot.command :unfollow do |event, subreddit|
             server_id = event.server.id.to_s
-            return DiscordBot.unfollow(server_id, subreddit)
+            return unfollow(server_id, subreddit)
         end
 
         # Give some bare-bones information about which subreddits the server follows. TODO: display the names of the channels following particular subreddits.
