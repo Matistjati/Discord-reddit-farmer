@@ -103,6 +103,7 @@ class DiscordBot
             user_id = event.author.id
             if user_id == 217704901889884160
                 save_state()
+                @bot.send_message(event.channel.id, "Exiting", false)
                 exit()
             else
                 return "You lack sufficient permissions to use this command"

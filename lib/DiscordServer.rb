@@ -173,7 +173,7 @@ class DiscordServer
         return servers
     end
 
-    def send_message(subreddit, title, bot, content: nil, image_url: nil)
+    def send_message(subreddit, bot, title, content: nil, image_url: nil)
         # Avoid async issues. Should probably use locks to be safe (unfollowing a channel = deleting a key, could lead to exception)
         if not @subreddits.key?(subreddit)
             return
@@ -203,7 +203,7 @@ class DiscordServer
         end
     end
 
-    def send_video(subreddit, bot, title, video_url)
+    def send_url(subreddit, bot, title, url)
         # Avoid async issues. Should probably use locks to be safe (unfollowing a channel = deleting a key, could lead to exception)
         if not @subreddits.key?(subreddit)
             return
@@ -213,7 +213,7 @@ class DiscordServer
         @subreddits[subreddit]["channel_ids"].each do |channel_id|
             # And away goes the message
             bot.send_message(channel_id, title)
-            bot.send_message(channel_id, video_url)
+            bot.send_message(channel_id, url)
         end
     end
 end

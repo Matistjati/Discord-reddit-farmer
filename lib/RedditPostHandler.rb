@@ -3,6 +3,14 @@ require 'httparty'
 require_relative "TokenBucket"
 
 class RedditPostHandler
+    def self.log_error(json_data)
+        puts("Error. Json saved in last_error.txt")
+        temp = open("last_error.txt", "w")
+        temp.write(json_data)
+        temp.close()
+    end
+
+
     def self.check_and_send_posts(watcher, settings, receiver, bucket)
         @interval_to_sec = {"hour" => 3600, "day" => 86400, "week" => 604800, "month" => 2629744, "year" => 31556926, "all" => 1e9}
 
@@ -45,11 +53,22 @@ class RedditPostHandler
                     temp.write(response)
                     temp.close()
 
-                    server.send_message(subreddit_name, "The bot Will now display #{response["data"]["children"].length} images (debug)", receiver)
+                    post_count = response["data"]["children"].length
+                    server.send_message(subreddit_name, receiver, "#{post_count} post#{post_count == 1 ? "" : "s"} from r/#{subreddit_name}")
                     response["data"]["children"].each do |child|
                         data = child["data"]
 
                         title = data["title"]
+                        encoding_options =
+                        {
+                            :invalid           => :replace,  # Replace invalid byte sequences
+                            :undef             => :replace,  # Replace anything not defined in ASCII
+                            :replace           => '',        # Use a blank for those replacements
+                            :universal_newline => true       # Always break lines with \n
+                        }
+
+                        title = title.encode(Encoding.find('ASCII'), encoding_options)
+                        title = title[0,254]
 
                         if not data.key?("post_hint")
                             text_content = data["selftext"]
@@ -65,7 +84,11 @@ class RedditPostHandler
                                 next
                             end
                             
-                            server.send_message(subreddit_name, title, receiver, content: text_content)
+                            if data.key?("url")
+                                server.send_url(subreddit_name, receiver, title, data["url"])
+                            else
+                                server.send_message(subreddit_name, receiver, title, content: text_content)
+                            end
                         elsif data["post_hint"].include? "video"
                             puts("Video_debug.txt saved")
                             temp = open("video_debug.txt", "w")
@@ -87,23 +110,29 @@ class RedditPostHandler
                                 next
                             end
 
-                            server.send_video(subreddit_name, receiver, title, video_url)
+                            server.send_url(subreddit_name, receiver, title, video_url)
                         elsif data["post_hint"].include? "image"
                             image_url = data["url"]
-                            server.send_message(subreddit_name, title, receiver, image_url: image_url)
+                            if image_url == nil
+                                image_url = data["url_overridden_by_dest"]
+                            end
+                            server.send_message(subreddit_name, receiver, title, image_url: image_url)
+                        elsif data["post_hint"].include? "link"
+                            if data["url_overridden_by_dest"] != nil
+                                url = data["url_overridden_by_dest"]
+                                server.send_url(subreddit_name, receiver, title, url)
+                            else
+                                RedditPostHandler.log_error(data.to_json())
+                            end
                         else
-                            puts("Could not find type for post. Json saved in last_error.txt")
-                            temp = open("last_error.txt", "w")
-                            temp.write(data.to_json())
-                            temp.close()
-                            server.send_message(subreddit_name, "Everything has failed.", receiver)
+                            RedditPostHandler.log_error(data.to_json())
                         end
                     end
                 elsif response.code == 404
-                    server.send_message(subreddit_name, "", receiver, content: "Subreddit #{subreddit_name} does not exist and is no longer being followed")
+                    server.send_message(subreddit_name, receiver, "", content: "Subreddit #{subreddit_name} does not exist and is no longer being followed")
                     receiver.unfollow(server_id, subreddit_name)
                 else
-                    server.send_message(subreddit_name, "", receiver, content: "Error #{response.code}. :(")
+                    server.send_message(subreddit_name, receiver, "", content: "Error #{response.code}. :(")
                 end
 
             end
